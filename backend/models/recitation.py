@@ -5,9 +5,9 @@ from .base import Base
 class Recitation(Base):
     __tablename__ = "recitation"
     id = Column(Integer, primary_key=True, index=True)
-    url = Column(String)
-    reciter_name = Column(String)
-    likes = Column(Integer, default=0)
+    url = Column(String, unique=True, index=True, nullable=False) # Added unique, index, nullable
+    reciter_name = Column(String, index=True) # Added index for potential searching
+    likes = Column(Integer, default=0, nullable=False) # Added nullable=False
     surah_id = Column(Integer, ForeignKey("surah.id"))
     juz_id = Column(Integer, ForeignKey("juz.id"))
     surah = relationship("Surah", back_populates="recitations")

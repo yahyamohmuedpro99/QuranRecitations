@@ -109,6 +109,10 @@ def add_recitation(recitation: RecitationCreate, db: Session = Depends(get_db)):
     else:
         db_juz_id = None
 
+    # Check if URL already exists
+    existing_recitation = db.query(Recitation).filter(Recitation.url == recitation.url).first()
+    if existing_recitation:
+        raise HTTPException(status_code=409, detail="Recitation with this URL already exists")
 
     db_recitation = Recitation(
         url=recitation.url,
