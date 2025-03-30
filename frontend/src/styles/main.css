@@ -30,6 +30,21 @@ nav {
     align-items: center;
     max-width: 1200px;
     margin: 0 auto;
+    /* Use flex properties to distribute space for centering search */
+    gap: 1rem; /* Add some gap between elements */
+}
+
+nav h1 {
+    flex-shrink: 0; /* Prevent title from shrinking */
+}
+
+.nav-links {
+     /* Let it take available space */
+     text-align: right; /* Align links to the right (adjust if needed) */
+}
+
+html[dir="rtl"] .nav-links {
+    text-align: left; /* Align links to the left for RTL */
 }
 
 /* Apply base RTL adjustments */
@@ -50,6 +65,68 @@ html[dir="rtl"] body {
 .nav-links a:hover {
     background-color: #34495e;
 }
+
+/* Search Bar Styles - Remove margin auto, let flexbox handle centering */
+.search-container {
+    display: flex;
+    align-items: center;
+    /* margin-left: auto; */ /* Removed */
+    flex-grow: 1; /* Allow search to grow */
+    justify-content: center; /* Center search within its container */
+    min-width: 250px; /* Ensure it has some minimum space */
+    max-width: 500px; /* Prevent it from becoming too wide */
+}
+
+/* Ensure search container itself doesn't push other elements too much */
+nav > * {
+    flex-shrink: 1;
+}
+nav > h1, nav > .nav-links {
+    flex-shrink: 0; /* Don't shrink title or links */
+}
+
+
+html[dir="rtl"] .search-container {
+     /* margin-right: auto; */ /* Removed */
+}
+
+
+#searchInput {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 4px 0 0 4px; /* Rounded left corners */
+    font-size: 0.9rem;
+    min-width: 200px; /* Adjust as needed */
+}
+
+html[dir="rtl"] #searchInput {
+    border-radius: 0 4px 4px 0; /* Rounded right corners for RTL */
+}
+
+
+#searchButton {
+    padding: 0.4rem 0.8rem;
+    border: 1px solid #3498db;
+    background-color: #3498db;
+    color: white;
+    border-radius: 0 4px 4px 0; /* Rounded right corners */
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+    border-left: none; /* Avoid double border */
+}
+
+html[dir="rtl"] #searchButton {
+    border-radius: 4px 0 0 4px; /* Rounded left corners for RTL */
+    border-left: 1px solid #3498db; /* Add border back */
+    border-right: none; /* Remove right border */
+}
+
+
+#searchButton:hover {
+    background-color: #2980b9;
+}
+
 
 /* Main content styles */
 main {
@@ -112,9 +189,36 @@ main {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); /* Slightly stronger shadow */
     border: 1px solid #eee; /* Subtle border */
     display: flex; /* Use flexbox for better layout */
-    flex-direction: column; /* Stack content vertically */
+    flex-direction: column; /* Default stack */
     gap: 0.5rem; /* Space between elements inside the card */
 }
+
+/* Side-by-side layout for items with video */
+.recitation-item.has-video {
+    flex-direction: row; /* Arrange items horizontally */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens if needed */
+    gap: 1.5rem; /* Add gap between details and video */
+}
+
+.recitation-item.has-video .recitation-details {
+    flex: 1 1 200px; /* Allow details to grow/shrink, base width 200px */
+    min-width: 150px; /* Prevent details from becoming too small */
+}
+
+.recitation-item.has-video .recitation-media {
+    flex: 1 1 300px; /* Allow media to grow/shrink, base width 300px */
+    min-width: 250px; /* Minimum width for the video */
+}
+
+/* Ensure actions are below details in side-by-side view */
+.recitation-item.has-video .recitation-actions {
+    width: 100%; /* Take full width below details/media */
+    order: 3; /* Place actions last in the flex order */
+    margin-top: 0.5rem; /* Adjust top margin */
+    padding-top: 0.5rem;
+    border-top: 1px solid #eee; /* Optional separator */
+}
+
 
 .surah-item h4 {
     color: #2c3e50;
@@ -311,8 +415,14 @@ main {
     justify-content: space-between; /* Space out count and button */
     align-items: center; /* Vertically align items */
     margin-top: 1rem; /* Space above actions */
-    width: 100%; /* Take full width */
+    width: 100%; /* Take full width by default */
 }
+
+/* Adjust actions spacing when not side-by-side */
+.recitation-item:not(.has-video) .recitation-actions {
+     margin-top: 1rem;
+}
+
 
 .like-count {
     font-size: 0.9em;

@@ -10,7 +10,8 @@ const routes = {
     juz: (id) => showJuzPage(id),
     surah: (id) => showSurahPage(id),
     addRecitation: () => showAddRecitationPage(),
-    mostLiked: () => showMostLikedPage() // Add route for most liked
+    mostLiked: () => showMostLikedPage(),
+    search: (query) => showSearchResultsPage(query) // Add route for search results
 };
 
 // --- Helper Functions ---
@@ -28,7 +29,7 @@ function getYouTubeVideoId(url) {
         }
         // Add more checks if needed for other YouTube URL formats
     } catch (e) {
-        console.error("Error parsing URL:", url, e);
+        // console.error("Error parsing URL:", url, e); // Optional: Reduce console noise
         return null; // Not a valid URL or YouTube URL we can parse
     }
     // Basic check for valid ID format (alphanumeric, -, _)
@@ -52,12 +53,17 @@ function createRecitationItemHTML(recitation) {
         // Default link
         mediaElementHTML = `<a href="${recitation.url}" target="_blank" rel="noopener noreferrer">استماع/مشاهدة</a>`;
     }
+    const itemClass = videoId ? "recitation-item has-video" : "recitation-item"; // Add class if video exists
 
     return `
-        <div class="recitation-item">
-            <p><strong>القارئ:</strong> ${recitation.reciter_name}</p>
-            ${contextName ? `<p><strong>السياق:</strong> ${contextName}</p>` : ''} <!-- Show context only if available -->
-            ${mediaElementHTML}
+        <div class="${itemClass}">
+            <div class="recitation-details"> <!-- Wrapper for text details -->
+                <p><strong>القارئ:</strong> ${recitation.reciter_name}</p>
+                ${contextName ? `<p><strong>السياق:</strong> ${contextName}</p>` : ''} <!-- Show context only if available -->
+            </div>
+            <div class="recitation-media"> <!-- Wrapper for video or link -->
+                 ${mediaElementHTML}
+            </div>
             <div class="recitation-actions"> <!-- Wrapper for likes and button -->
                  <span class="like-count">الإعجابات: ${recitation.likes}</span> <!-- Display like count -->
                  <button class="like-btn" data-id="${recitation.id}">
@@ -104,6 +110,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     navLinks.appendChild(mostLikedLink); // Append the new link
 
+    // Setup Search Bar
+    const searchInput = document.getElementById('searchInput');
+    const searchButton = document.getElementById('searchButton');
+
+    const performSearch = () => {
+        const query = searchInput.value.trim();
+        if (query) {
+            // Use navigateTo for search results page
+            navigateTo(`search/${encodeURIComponent(query)}`);
+        }
+    };
+
+    searchButton.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+
     // Handle initial route based on hash or default to home
     handleInitialRoute();
 
@@ -122,10 +147,12 @@ function navigateTo(route) {
     const mainContent = document.getElementById('main-content');
     mainContent.innerHTML = '<p>جار التحميل...</p>'; // Translated loading indicator
 
-    const [path, params] = route.split('/');
+    const [path, ...params] = route.split('/'); // Use rest operator for potential multi-part params like search query
+    const param = params.join('/'); // Rejoin params if they contained slashes (e.g., search query)
+
     if (routes[path]) {
         try {
-            routes[path](params); // Execute the function for the route
+            routes[path](param ? decodeURIComponent(param) : undefined); // Pass decoded param
             // Update hash only if it's different to avoid loop
             if (window.location.hash.substring(1) !== route) {
                 window.location.hash = route;
@@ -213,7 +240,7 @@ async function showJuzPage(juzId) {
         attachLikeButtonListeners(); // Re-attach listeners after rendering
     } catch (error) {
         console.error('Error loading Juz data:', error);
-        mainContent.innerHTML = `<p>خطأ في تحميل بيانات الجزء ${juzId}. هل الخادم يعمل؟</p>`; // Translated
+        mainContent.innerHTML = `<p>خطأ في تحميل بيانات الجزء ${juzId} </p>`; // Translated
     }
 }
 
@@ -250,7 +277,7 @@ async function showSurahPage(surahId) {
         attachLikeButtonListeners(); // Re-attach listeners after rendering
     } catch (error) {
         console.error('Error loading Surah data:', error);
-        mainContent.innerHTML = `<p>خطأ في تحميل بيانات السورة ${surahId}. هل الخادم يعمل؟</p>`; // Translated
+        mainContent.innerHTML = `<p>خطأ في تحميل بيانات السورة ${surahId} </p>`; // Translated
     }
 }
 
@@ -279,7 +306,7 @@ async function showRandomPage() {
 
     } catch (error) {
         console.error('Error getting random recitation:', error);
-        mainContent.innerHTML = `<p>تعذر تحميل تلاوة عشوائية: ${error.message}. هل الخادم يعمل؟</p>`; // Updated error message
+        mainContent.innerHTML = `<p>تعذر تحميل تلاوة عشوائية: ${error.message} </p>`; // Updated error message
     }
 }
 
@@ -302,11 +329,12 @@ function showAboutPage() {
                     </ul>
                      <h3>إرشادات</h3>
                      <ul>
-                        <li>يرجى إضافة روابط لتلاوات </li>
+                        <li>يرجى إضافة روابط لتلاوات عالية الجودة.</li>
                         <li>تأكد من أن الرابط يشير مباشرة إلى التلاوة (أو قائمة تشغيل لجزء كامل).</li>
                         <li>قدم اسم القارئ الصحيح إذا كان معروفًا.</li>
                         <li>تجنب الإدخالات المكررة إن أمكن.</li>
                      </ul>
+                    <p> </p>
                 </div>
             `;
 }
@@ -553,7 +581,41 @@ async function showMostLikedPage() {
 
     } catch (error) {
         console.error('Error loading most liked recitations:', error);
-        mainContent.innerHTML = `<p>خطأ في تحميل التلاوات الأكثر إعجابًا: ${error.message}. هل الخادم يعمل؟</p>`; // Translated error message
+        mainContent.innerHTML = `<p>خطأ في تحميل التلاوات الأكثر إعجابًا: ${error.message} </p>`; // Translated error message
+    }
+}
+
+// --- Search Results Page ---
+async function showSearchResultsPage(query) {
+    const mainContent = document.getElementById('main-content');
+    mainContent.innerHTML = `<p>جار البحث عن "${query}"...</p>`; // Translated loading message
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/recitations/search?q=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'خطأ غير معروف' }));
+            throw new Error(errorData.detail || `خطأ HTTP! الحالة: ${response.status}`);
+        }
+        const results = await response.json();
+
+        if (results.length === 0) {
+            mainContent.innerHTML = `<h2>نتائج البحث عن "${query}"</h2><p>لم يتم العثور على نتائج.</p>`; // Translated no results
+            return;
+        }
+
+        mainContent.innerHTML = `
+            <div class="search-results-page">
+                <h2>نتائج البحث عن "${query}"</h2>
+                <div class="recitations-list">
+                    ${results.map(createRecitationItemHTML).join('')} <!-- Use helper function -->
+                </div>
+            </div>
+        `;
+        attachLikeButtonListeners(); // Attach listeners for the like buttons
+
+    } catch (error) {
+        console.error('Error loading search results:', error);
+        mainContent.innerHTML = `<p>خطأ في تحميل نتائج البحث: ${error.message} </p>`; // Translated error message
     }
 }
 

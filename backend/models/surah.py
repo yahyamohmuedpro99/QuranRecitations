@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
-from .base import Base
+from .base import Base, surah_juz_association # Import the association table
 
 class Surah(Base):
     __tablename__ = "surah"
@@ -10,6 +10,12 @@ class Surah(Base):
     name_arabic = Column(String)
     translation_en = Column(String) # Added for Surah info
     verses_count = Column(Integer) # Added for Surah info
-    juz_id = Column(Integer, ForeignKey("juz.id"))
-    juz = relationship("Juz", back_populates="surahs")
+    # Removed juz_id and direct juz relationship
+
+    # Many-to-Many relationship with Juz
+    juzs = relationship(
+        "Juz",
+        secondary=surah_juz_association,
+        back_populates="surahs"
+    )
     recitations = relationship("Recitation", back_populates="surah")

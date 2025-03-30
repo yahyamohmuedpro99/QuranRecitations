@@ -112,7 +112,7 @@ def add_recitation(recitation: RecitationCreate, db: Session = Depends(get_db)):
     # Check if URL already exists
     existing_recitation = db.query(Recitation).filter(Recitation.url == recitation.url).first()
     if existing_recitation:
-        raise HTTPException(status_code=409, detail="Recitation with this URL already exists")
+        raise HTTPException(status_code=409, detail="التلاوة موجودة مسبقًا") # "Recitation already exists" in Arabic
 
     db_recitation = Recitation(
         url=recitation.url,
@@ -154,6 +154,29 @@ def like_recitation(recitation_id: int, db: Session = Depends(get_db)):
     # No need to refresh relationships again if already eager loaded
 
     return RecitationResponse.from_orm(recitation)
+
+# --- Search Endpoint ---
+@app.get("/recitations/search", response_model=List[RecitationResponse])
+def search_recitations(q: str, db: Session = Depends(get_db)):
+    if not q:
+        return [] # Return empty list if query is empty
+
+    search_term = f"%{q.lower()}%" # Prepare for case-insensitive partial matching
+
+    # Query recitations matching reciter name, URL, or associated Surah name/arabic name
+    recitations = db.query(Recitation).outerjoin(Surah).options(
+        joinedload(Recitation.surah), # Eager load related data
+        joinedload(Recitation.juz)
+    ).filter(
+        Recitation.reciter_name.ilike(search_term) |
+        Recitation.url.ilike(search_term) |
+        Surah.name.ilike(search_term) |
+        Surah.name_arabic.ilike(search_term)
+        # Note: Searching by Juz number directly isn't included here,
+        # but Juz recitations can be found via reciter/url.
+    ).order_by(Recitation.likes.desc()).limit(50).all() # Limit results
+
+    return [RecitationResponse.from_orm(r) for r in recitations]
 
 
 # --- Random Endpoint ---
